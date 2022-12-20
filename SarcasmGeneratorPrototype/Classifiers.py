@@ -38,6 +38,7 @@ def split_data(df: pd.DataFrame, percentage_second: int) -> (pd.DataFrame, pd.Da
 
     Returns:
         (pd.DataFrame, pd.DataFrame): Two dataframes with equal size balanced on the target_text column.
+
     """
     df_1_text, df_2_text, df_1_labels, df_2_labels = train_test_split(df['source_text'].tolist(),
                                                                       df['target_text'].tolist(),
@@ -85,7 +86,7 @@ def prepare_train_datasets(train_dataset_path: str, num_context_tweets: int = 2,
     df['target_text'] = df['label']
 
     # Split the dataset into two  equal sets
-    train_df_1, train_df_2 = split_data(df, 50)
+    train_df_1, train_df_2 = split_data(df=df, percentage_second=50)
 
     return train_df_1, train_df_2
 
@@ -124,6 +125,7 @@ class Classifier:
     def __init__(self):
         """
         Initialize a classifier.
+
         """
         self.classifier = SimpleT5()
         self.trained_classifier_path = None
@@ -147,7 +149,7 @@ class Classifier:
             use_gpu (bool): Whether to use the GPU.
 
         """
-        train_data, eval_data = split_data(train_df, 5)
+        train_data, eval_data = split_data(df=train_df, percentage_second=5)
         self.classifier.from_pretrained(model_type="t5", model_name="t5-base")
         self.classifier.train(train_df=train_data,
                               eval_df=eval_data,
@@ -161,8 +163,6 @@ class Classifier:
                               early_stopping_patience_epochs=early_stopping_patience_epochs
                               )
 
-        return
-
     def load_classifier(self, trained_classifier_path: str, use_gpu: bool = True):
         """
         Load a previously trained classifier.
@@ -173,7 +173,9 @@ class Classifier:
 
         """
         self.trained_classifier_path = trained_classifier_path
-        self.classifier.load_model("t5", trained_classifier_path, use_gpu=use_gpu)
+        self.classifier.load_model(model_type="t5",
+                                   model_dir=trained_classifier_path,
+                                   use_gpu=use_gpu)
 
     def evaluate_classifier(self, test_df: pd.DataFrame) -> (str, str, str) or (None, None, None):
         """
@@ -183,8 +185,9 @@ class Classifier:
         Args:
             test_df (pd.DataFrame): Test dataset.
 
-        Returns: (str, str, str) or (None, None, None): Report stating f1-score, precision and accuracy for the given
-        classifier. Returns Nones if no classifier is loaded.
+        Returns:
+            (str, str, str) or (None, None, None): Report stating f1-score, precision and accuracy for the classifier.
+            Returns Nones if no classifier is loaded.
 
         """
         if self.trained_classifier_path is None:
@@ -193,7 +196,7 @@ class Classifier:
 
         predictions = []
         for index, row in test_df.iterrows():
-            prediction = self.classifier.predict(row['source_text'])[0]
+            prediction = self.classifier.predict(source_text=row['source_text'])[0]
             predictions.append(prediction)
 
         result_df = test_df.copy()
@@ -222,7 +225,7 @@ class Classifier:
             print("Please load a model first.")
             return None
 
-        prediction = self.classifier.predict(conversation)[0]
+        prediction = self.classifier.predict(source_text=conversation)[0]
         return True if prediction == "SARCASM" else False
 
 
@@ -236,11 +239,11 @@ def train_classifiers(train_dataset_path: str, use_gpu: bool = True):
 
     """
     print("Preparing Datasets..")
-    dataset_judge, dataset_classifier = prepare_train_datasets(train_dataset_path)
+    dataset_judge, dataset_classifier = prepare_train_datasets(train_dataset_path=train_dataset_path)
 
     print("Fine-tuning Classifier..")
     judge_model = Classifier()
-    judge_model.finetune(dataset_judge,
+    judge_model.finetune(train_df=dataset_judge,
                          max_epochs=8,
                          early_stopping_patience_epochs=0,
                          save_only_last_epoch=True,
@@ -249,7 +252,7 @@ def train_classifiers(train_dataset_path: str, use_gpu: bool = True):
 
     print("Fine-tuning Judge..")
     classifier_model = Classifier()
-    classifier_model.finetune(dataset_classifier,
+    classifier_model.finetune(train_df=dataset_classifier,
                               max_epochs=9,
                               early_stopping_patience_epochs=0,
                               save_only_last_epoch=True,
@@ -268,11 +271,12 @@ def evaluation(trained_classifier_path: str, test_dataset_path: str, use_gpu: bo
 
     """
     print("Preparing test-dataset..")
-    test_dataset = prepare_test_dataset(test_dataset_path, 2)
+    test_dataset = prepare_test_dataset(path=test_dataset_path, num_context_tweets=2)
 
     print("Loading classifier..")
     classifier = Classifier()
-    classifier.load_classifier(trained_classifier_path, use_gpu=use_gpu)
+    classifier.load_classifier(trained_classifier_path=trained_classifier_path,
+                               use_gpu=use_gpu)
 
     print("Evaluating Classifier..")
-    print(classifier.evaluate_classifier(test_dataset))
+    print(classifier.evaluate_classifier(test_df=test_dataset))

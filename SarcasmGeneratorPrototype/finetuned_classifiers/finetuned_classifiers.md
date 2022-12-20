@@ -17,8 +17,11 @@ provided by [ETS](https://github.com/EducationalTestingService/sarcasm).
 
 ### Results
 To reproduce the results using the functionality of *Classifier.py* please use the original 
-[ETS](https://github.com/EducationalTestingService/sarcasm) twitter datasets. They will be pre-processed
-to the form shown in *first_half.jsonl*, *second_half.jsonl*, *test_data.jsonl*.
+[ETS](https://github.com/EducationalTestingService/sarcasm) twitter datasets.
+They will be pre-processed to the form shown in *first_half.jsonl*, *second_half.jsonl*, *test_data.jsonl*.
+Two context tweets were used for each entry and the data was augmented with additional entries
+using only the context tweets for sarcastic entries and labeling these new conversations as non-sarcastic.
+
 
 |              | Accuracy | Precision | F1   |
 |--------------|----------|-----------|------|
