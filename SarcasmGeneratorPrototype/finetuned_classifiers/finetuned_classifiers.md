@@ -16,6 +16,10 @@ Which is just a processed version of the twitter test set
 provided by [ETS](https://github.com/EducationalTestingService/sarcasm).
 
 ### Results
+To reproduce the results using the functionality of *Classifier.py* please use the original 
+[ETS](https://github.com/EducationalTestingService/sarcasm) twitter datasets. They will be pre-processed
+to the form shown in *first_half.jsonl*, *second_half.jsonl*, *test_data.jsonl*.
+
 |              | Accuracy | Precision | F1   |
 |--------------|----------|-----------|------|
 | Classifier 1 | 0.72     | 0.72      | 0.72 |
