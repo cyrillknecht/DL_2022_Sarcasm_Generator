@@ -11,6 +11,7 @@ import pandas as pd
 MODEL = '124M'
 EPOCHS = 2
 STEPS_PER_EPOCH = 10
+GENERATE = 100
 
 # Settings for dataset / generated samples mix
 DATASET_SAMPLES_INITIAL = 100
@@ -100,3 +101,9 @@ for epoch in range(EPOCHS):
                 if promptIndex >= len(prompts):
                     promptIndex = 0
 
+# Generate tweets and write to output file
+with open(RESULT_PATH, 'w') as f:
+    for i, row in prompts.head(GENERATE).iterrows():
+        generated_tweet = gpt2.generate(sess, run_name='run', return_as_list=True, length=128, prefix=row['context'])[0]
+        generated_tweet = generated_tweet.replace("\r", " ").replace("\n", " ")
+        f.write(generated_tweet + "\n")
