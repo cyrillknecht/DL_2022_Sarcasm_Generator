@@ -41,7 +41,7 @@ gpt2.finetune(sess,
               model_name=MODEL,
               steps=STEPS,
               restore_from='fresh',
-              run_name='run',
+              run_name='run_classic',
               print_every=10,
               sample_every=200,
               save_every=STEPS,
@@ -59,6 +59,6 @@ prompts = preprocessing(prompts, 'context')
 # Generate tweets and write to output file
 with open(RESULT_PATH, 'w') as f:
     for i, row in prompts.head(GENERATE).iterrows():
-        generated_tweet = gpt2.generate(sess, run_name='run', return_as_list=True, length=128, prefix=row['context'])[0]
+        generated_tweet = gpt2.generate(sess, run_name='run_classic', return_as_list=True, length=128, prefix=row['context'])[0]
         generated_tweet = generated_tweet.replace("\r", " ").replace("\n", " ")
         f.write(generated_tweet + "\n")

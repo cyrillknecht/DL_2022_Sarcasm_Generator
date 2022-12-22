@@ -38,12 +38,8 @@ all_sarcastic_tweets = preprocessing(all_sarcastic_tweets, 'response')
 
 # Save as txt file
 with open(TRAIN_SET_PATH, 'w') as f:
-    for row in all_sarcastic_tweets.head(DATASET_SAMPLES_INITIAL).iterrows():
+    for i, row in all_sarcastic_tweets.head(DATASET_SAMPLES_INITIAL).iterrows():
         f.write(row['context'] + row['response'] + "\n")
-
-# Get base model
-gpt2.download_gpt2(model_name="124M")
-sess = gpt2.start_tf_sess()
 
 # Init classifier for judging generated tweets
 judge = Classifier()
@@ -55,6 +51,10 @@ prompts = train_data[train_data["label"] == "NOT_SARCASM"][['context']]
 prompts = concat_last_context_rows(prompts, 2)
 prompts = preprocessing(prompts, 'context')
 promptIndex = 0
+
+# Get base model
+gpt2.download_gpt2(model_name="124M")
+sess = gpt2.start_tf_sess()
 
 # Use fresh model for first epoch
 restore_from = 'fresh'
@@ -68,7 +68,7 @@ for epoch in range(EPOCHS):
                   model_name=MODEL,
                   steps=STEPS_PER_EPOCH,
                   restore_from=restore_from,
-                  run_name='run',
+                  run_name='run_self_augmentation',
                   print_every=10,
                   sample_every=200,
                   save_every=STEPS_PER_EPOCH,
@@ -88,7 +88,7 @@ for epoch in range(EPOCHS):
 
         # Generate new training samples
         while nGenerated < GENERATED_SAMPLES_PER_EPOCH:
-            generated_tweet = gpt2.generate(sess, run_name='run', return_as_list=True, length=128, prefix=row['context'])[0]
+            generated_tweet = gpt2.generate(sess, run_name='run_self_augmentation', return_as_list=True, length=128, prefix=prompts.iloc[promptIndex]['context'])[0]
             generated_tweet = generated_tweet.replace("\r", " ").replace("\n", " ")
 
             if judge.classify_tweet(generated_tweet):
@@ -96,14 +96,14 @@ for epoch in range(EPOCHS):
                 nGenerated += 1
                 f.write(generated_tweet+"\n")
 
-                promptIndex += 1
+            promptIndex += 1
 
-                if promptIndex >= len(prompts):
-                    promptIndex = 0
+            if promptIndex >= len(prompts):
+                promptIndex = 0
 
 # Generate tweets and write to output file
 with open(RESULT_PATH, 'w') as f:
     for i, row in prompts.head(GENERATE).iterrows():
-        generated_tweet = gpt2.generate(sess, run_name='run', return_as_list=True, length=128, prefix=row['context'])[0]
+        generated_tweet = gpt2.generate(sess, run_name='run_self_augmentation', return_as_list=True, length=128, prefix=row['context'])[0]
         generated_tweet = generated_tweet.replace("\r", " ").replace("\n", " ")
         f.write(generated_tweet + "\n")
