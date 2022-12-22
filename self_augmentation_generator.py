@@ -9,8 +9,8 @@ import pandas as pd
 
 # Training options
 MODEL = '124M'
-EPOCHS = 2
-STEPS_PER_EPOCH = 10
+EPOCHS = 10
+STEPS_PER_EPOCH = 100
 GENERATE = 100
 
 # Settings for dataset / generated samples mix
@@ -62,6 +62,10 @@ restore_from = 'fresh'
 # Finetuning epochs
 promptIndex = 0
 for epoch in range(EPOCHS):
+    # Reset session
+    gpt2.reset_session(sess)
+    sess = gpt2.start_tf_sess()
+
     nGenerated = 0
     gpt2.finetune(sess,
                   dataset=TRAIN_SET_PATH,
