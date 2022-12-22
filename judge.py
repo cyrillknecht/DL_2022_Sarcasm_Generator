@@ -22,5 +22,10 @@ for file in FILES:
     print("Results for " + file)
     print("Total Samples: " + str(samples))
     print("Classified as sarcasm: " + str(sarcasm))
-    print("Sarcasm percentage: " + str(samples / sarcasm))
+    if sarcasm == 0:
+        percentage = 0
+    else:
+        percentage = sarcasm / samples * 100
+
+    print("Sarcasm percentage: " + str(percentage))
     print()
