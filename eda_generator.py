@@ -93,13 +93,16 @@ for epoch in range(EPOCHS):
         for sample in range(DATASET_SAMPLES_PER_EPOCH): 
             row = all_sarcastic_tweets.iloc[startIndex + sample]
             f.write(row['context'] + row['response'] + "\n")
-            
+        
+        print(f"Augmenting {AUGMENTED_SAMPLES_PER_EPOCH} samples...")
+        
         # Augmented samples
         for sample in range(AUGMENTED_SAMPLES_PER_EPOCH): 
             row = all_sarcastic_tweets.iloc[startIndex + DATASET_SAMPLES_PER_EPOCH + sample]
             row['response'] = eda(row['response'], num_aug=1)[0]
             f.write(row['context'] + row['response'] + "\n")
                 
+        print(f"Sample augmentation done!")
 
 # Generate tweets and write to output file
 with open(RESULT_PATH, 'w') as f:
