@@ -10,7 +10,7 @@ import pandas as pd
 # Training options
 MODEL = '124M'
 EPOCHS = 10
-STEPS_PER_EPOCH = 50
+#STEPS_PER_EPOCH = 50
 GENERATE = 100
 
 # Settings for dataset / generated samples mix
@@ -70,18 +70,18 @@ for epoch in range(EPOCHS):
     gpt2.reset_session(sess)
     sess = gpt2.start_tf_sess()
 
-    print(f"Running {STEPS_PER_EPOCH} iterations on {current_number_of_samples} samples...")
+    print(f"Running {current_number_of_samples} iterations on {current_number_of_samples} samples...")
 
     
     gpt2.finetune(sess,
                   dataset=TRAIN_SET_PATH,
                   model_name=MODEL,
-                  steps=STEPS_PER_EPOCH,
+                  steps=current_number_of_samples,
                   restore_from=restore_from,
                   run_name='run_self_augmentation',
                   print_every=5,
                   sample_every=100,
-                  save_every=STEPS_PER_EPOCH,
+                  save_every=current_number_of_samples,
                   reuse=False,
                   use_memory_saving_gradients=False #unfortunately doesn't work in Tensorflow 2
                   )
