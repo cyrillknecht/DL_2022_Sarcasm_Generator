@@ -7,19 +7,14 @@ from classifier import Classifier
 import gpt_2_simple as gpt2
 import pandas as pd
 
-# Suppress annyoing warnings
-
-import tensorflow as tf
-tf.get_logger().setLevel('INFO')
-
 # Training options
 MODEL = '124M'
 EPOCHS = 10
-STEPS_PER_EPOCH = 20
+STEPS_PER_EPOCH = 50
 GENERATE = 100
 
 # Settings for dataset / generated samples mix
-DATASET_SAMPLES_INITIAL = 20
+DATASET_SAMPLES_INITIAL = 100
 DATASET_SAMPLES_PER_EPOCH = 20
 GENERATED_SAMPLES_PER_EPOCH = 20
 MAX_GENERATOR_TRIES = 100
@@ -75,18 +70,18 @@ for epoch in range(EPOCHS):
     gpt2.reset_session(sess)
     sess = gpt2.start_tf_sess()
 
-    print(f"Running iteration on {current_number_of_samples} samples...")
+    print(f"Running {STEPS_PER_EPOCH} iterations on {current_number_of_samples} samples...")
 
     
     gpt2.finetune(sess,
                   dataset=TRAIN_SET_PATH,
                   model_name=MODEL,
-                  steps=current_number_of_samples,
+                  steps=STEPS_PER_EPOCH,
                   restore_from=restore_from,
                   run_name='run_self_augmentation',
                   print_every=5,
                   sample_every=100,
-                  save_every=current_number_of_samples,
+                  save_every=STEPS_PER_EPOCH,
                   reuse=False,
                   use_memory_saving_gradients=False #unfortunately doesn't work in Tensorflow 2
                   )

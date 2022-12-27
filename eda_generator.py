@@ -8,6 +8,10 @@ import gpt_2_simple as gpt2
 import pandas as pd
 from eda import eda
 
+# Suppress annyoing warnings
+import tensorflow as tf
+tf.get_logger().setLevel('INFO')
+
 # Training options
 MODEL = '124M'
 EPOCHS = 10
