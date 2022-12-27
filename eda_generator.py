@@ -18,7 +18,7 @@ GENERATE = 100
 # (NOTE: Per epoch, a total of DATSET_SAMPLES_PER_EPOCH + AUGMENTED_SAMPLES_PER_EPOCH will be generated)
 DATASET_SAMPLES_INITIAL = 100
 DATASET_SAMPLES_PER_EPOCH = 20
-AUGMENTED_SAMPLES_PER_EPOCH = 20 
+AUGMENTED_SAMPLES_PER_EPOCH = 20
 
 # Path variables
 DATASET_PATH = 'dataset/ets_twitter_train_data_generator.jsonl'
@@ -42,6 +42,8 @@ all_sarcastic_tweets = preprocessing(all_sarcastic_tweets, 'response')
 with open(TRAIN_SET_PATH, 'w') as f:
     for i, row in all_sarcastic_tweets.head(DATASET_SAMPLES_INITIAL).iterrows():
         f.write(row['context'] + row['response'] + "\n")
+
+current_number_of_samples = DATASET_SAMPLES_INITIAL
 
 # Init classifier for judging generated tweets
 judge = Classifier()
@@ -72,17 +74,21 @@ for epoch in range(EPOCHS):
     gpt2.finetune(sess,
                   dataset=TRAIN_SET_PATH,
                   model_name=MODEL,
-                  steps=STEPS_PER_EPOCH,
+                  steps=current_number_of_samples,
                   restore_from=restore_from,
                   run_name='run_self_augmentation',
                   print_every=10,
+                  batch_size=1,
                   sample_every=200,
                   save_every=STEPS_PER_EPOCH,
-                  reuse=False
+                  reuse=False,
+                  use_memory_saving_gradients=False #unfortunately doesn't work in Tensorflow 2
                   )
 
     # Always use same model for subsequent epochs
     restore_from = 'latest'
+
+    current_number_of_samples = 0
 
     # Create new dataset for next epoch
     with open(TRAIN_SET_PATH, 'w') as f:
@@ -93,6 +99,7 @@ for epoch in range(EPOCHS):
         for sample in range(DATASET_SAMPLES_PER_EPOCH): 
             row = all_sarcastic_tweets.iloc[startIndex + sample]
             f.write(row['context'] + row['response'] + "\n")
+            current_number_of_samples += 1
         
         print(f"Augmenting {AUGMENTED_SAMPLES_PER_EPOCH} samples...")
         
@@ -101,6 +108,7 @@ for epoch in range(EPOCHS):
             row = all_sarcastic_tweets.iloc[startIndex + DATASET_SAMPLES_PER_EPOCH + sample]
             row['response'] = eda(row['response'], num_aug=1)[0]
             f.write(row['context'] + row['response'] + "\n")
+            current_number_of_samples += 1
                 
         print(f"Sample augmentation done!")
 

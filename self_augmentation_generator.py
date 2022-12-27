@@ -7,16 +7,23 @@ from classifier import Classifier
 import gpt_2_simple as gpt2
 import pandas as pd
 
+# Suppress annyoing warnings
+
+import tensorflow as tf
+tf.get_logger().setLevel('INFO')
+
 # Training options
 MODEL = '124M'
 EPOCHS = 10
-STEPS_PER_EPOCH = 100
+STEPS_PER_EPOCH = 20
 GENERATE = 100
 
 # Settings for dataset / generated samples mix
-DATASET_SAMPLES_INITIAL = 100
+DATASET_SAMPLES_INITIAL = 20
 DATASET_SAMPLES_PER_EPOCH = 20
 GENERATED_SAMPLES_PER_EPOCH = 20
+MAX_GENERATOR_TRIES = 100
+GENERATION_BATCH_SIZE=8
 
 # Path variables
 DATASET_PATH = 'dataset/ets_twitter_train_data_generator.jsonl'
@@ -40,6 +47,8 @@ all_sarcastic_tweets = preprocessing(all_sarcastic_tweets, 'response')
 with open(TRAIN_SET_PATH, 'w') as f:
     for i, row in all_sarcastic_tweets.head(DATASET_SAMPLES_INITIAL).iterrows():
         f.write(row['context'] + row['response'] + "\n")
+
+current_number_of_samples = DATASET_SAMPLES_INITIAL
 
 # Init classifier for judging generated tweets
 judge = Classifier()
@@ -66,44 +75,68 @@ for epoch in range(EPOCHS):
     gpt2.reset_session(sess)
     sess = gpt2.start_tf_sess()
 
-    nGenerated = 0
+    print(f"Running iteration on {current_number_of_samples} samples...")
+
+    
     gpt2.finetune(sess,
                   dataset=TRAIN_SET_PATH,
                   model_name=MODEL,
-                  steps=STEPS_PER_EPOCH,
+                  steps=current_number_of_samples,
                   restore_from=restore_from,
                   run_name='run_self_augmentation',
-                  print_every=10,
-                  sample_every=200,
-                  save_every=STEPS_PER_EPOCH,
-                  reuse=False
+                  print_every=5,
+                  sample_every=100,
+                  save_every=current_number_of_samples,
+                  reuse=False,
+                  use_memory_saving_gradients=False #unfortunately doesn't work in Tensorflow 2
                   )
 
     # Always use same model for subsequent epochs
     restore_from = 'latest'
 
+    current_number_of_samples = 0
+
     # Create new dataset for next epoch
     with open(TRAIN_SET_PATH, 'w') as f:
         # Take samples from dataset
-        startIndex = DATASET_SAMPLES_INITIAL + epoch * DATASET_SAMPLES_PER_EPOCH
+        startIndex = (DATASET_SAMPLES_INITIAL + epoch * DATASET_SAMPLES_PER_EPOCH) % 5000 #mod 5000 because that's how many samples the training set contains; we don't want to run out of range
         for sample in range(DATASET_SAMPLES_PER_EPOCH):
             row = all_sarcastic_tweets.iloc[startIndex + sample]
             f.write(row['context'] + row['response'] + "\n")
+            current_number_of_samples += 1
+            
+        nGenerated = 0
+        generatorTries = 0
+
+        print(f"Generating new samples...")
 
         # Generate new training samples
-        while nGenerated < GENERATED_SAMPLES_PER_EPOCH:
-            generated_tweet = gpt2.generate(sess, run_name='run_self_augmentation', return_as_list=True, length=128, prefix=prompts.iloc[promptIndex]['context'])[0]
-            generated_tweet = generated_tweet.replace("\r", " ").replace("\n", " ")
+        while nGenerated < GENERATED_SAMPLES_PER_EPOCH and generatorTries < MAX_GENERATOR_TRIES:
+        
+            generated_tweets = gpt2.generate(sess, run_name='run_self_augmentation', return_as_list=True, length=128, prefix=prompts.iloc[promptIndex]['context'], nsamples=GENERATION_BATCH_SIZE, batch_size=GENERATION_BATCH_SIZE)
+            
+            for generated_tweet in generated_tweets:
+            
+                generated_tweet = generated_tweet.replace("\r", " ").replace("\n", " ")
 
-            if judge.classify_tweet(generated_tweet):
-                # Only take it if answers are classified as sarcasm
-                nGenerated += 1
-                f.write(generated_tweet+"\n")
+                if judge.classify_tweet(generated_tweet):
+                    # Only take it if answers are classified as sarcasm
+                    
+                    f.write(generated_tweet+"\n")
+                    nGenerated += 1
+                    current_number_of_samples += 1
 
-            promptIndex += 1
+                promptIndex += 1
 
-            if promptIndex >= len(prompts):
-                promptIndex = 0
+                if promptIndex >= len(prompts):
+                    promptIndex = 0
+                
+                generatorTries += 1
+                
+                if nGenerated >= GENERATED_SAMPLES_PER_EPOCH: # Prevent generating more than GENERATED_SAMPLES_PER_EPOCH samples
+                    break
+                    
+        print(f"Finished sample generation. {nGenerated} generated samples were classified as 'sarcastic' (out of {generatorTries} generated samples)")
 
 # Generate tweets and write to output file
 with open(RESULT_PATH, 'w') as f:
