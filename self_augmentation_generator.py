@@ -132,9 +132,8 @@ for epoch in range(EPOCHS):
                 #print(f"Context: {prefix}")
                 #print(f"Generated:\n{generated_tweet}\n\n")
             
-                generated_tweet = generated_tweet.replace("\r", " ").replace("\n", " ").replace(",", "").replace(";", "").replace("  ", " ")
-
-                #generated_tweet = 
+                #generated_tweet = re.sub("\r|\n|,|;|  +", " ", generated_tweet)
+                generated_tweet = generated_tweet.replace("\r", " ").replace("\n", " ").replace(",", "").replace(";", "").strip()
 
                 if classifier.classify_tweet(generated_tweet):
                     # Only take it if answers are classified as sarcasm
@@ -166,12 +165,14 @@ with open(RESULT_PATH, 'w') as f:
     # Make header because the first line is skipped when using csv
     f.write("data\n")
 
-    for i, row in prompts.head(GENERATE).iterrows():
+    counter = 0
+    for i, row in prompts.head(GENERATE).iterrows(): # Note: i is the _original_ row number, which means i is not just a "counter variable"
         prefix = "<sc> " + row['context'] + " <ec> <sr> "
         generated_tweet = gpt2.generate(sess, run_name='run_self_augmentation', return_as_list=True, length=128, prefix=prefix, truncate="<|endoftext|>")[0]
-        generated_tweet = generated_tweet.replace("\r", " ").replace("\n", " ").replace(",", "").replace(";", "").replace("  ", " ")
+        generated_tweet = generated_tweet.replace("\r", " ").replace("\n", " ").replace(",", "").replace(";", "").strip()
         f.write(generated_tweet + "\n")
-        if i % 10 == 0:
-            print(f"Generated {i} outputs ({i/GENERATE*100:2f}% done)...")
+        if counter % 10 == 0:
+            print(f"Generated {counter} outputs ({counter/GENERATE*100:2f}% done)...")
+        counter += 1
 
 print(f"Finished generating outputs. ")

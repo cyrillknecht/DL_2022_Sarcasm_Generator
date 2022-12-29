@@ -20,15 +20,18 @@ for file in FILES:
                 samples += 1
                 if judge.classify_tweet(line):
                     sarcasm += 1
+                if samples % 10 == 0:
+                    print(f"Current sample: {samples}")
     elif file[-4:] == ".csv": # adapted from gpt2simple's load_dataset
          with open(FOLDER+"/"+file, 'r', encoding='utf8', errors='ignore') as f:
                 f.readline()   # skip header
                 reader = csv.reader(f)
                 for line in reader:
-                    print(line)
                     samples += 1
                     if judge.classify_tweet(line[0]):
                         sarcasm += 1
+                    if samples % 10 == 0:
+                        print(f"Current sample: {samples}")
 
     print("Results for " + file)
     print("Total Samples: " + str(samples))
