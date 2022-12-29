@@ -8,11 +8,13 @@ from sklearn.model_selection import train_test_split
 
 def preprocessing(df, field):
     # Remove @...
-    df[field] = df[field].replace(regex=['(@\w+)'], value='')
+    df[field] = df[field].replace(regex=['(@\w+)'], value='xxusr')
     # Remove <URL>
-    df[field] = df[field].replace(regex=['<URL>'], value='')
+    df[field] = df[field].replace(regex=['<URL>'], value='xxurl')
     # Remove links
     df[field] = df[field].replace(regex=['(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w\.-]*)'], value='')
+    # Remove commas (because otherwise we can't use csv)
+    df[field] = df[field].replace(regex=[','], value=' ')
     # Remove multiple spaces
     df[field] = df[field].replace(regex=['  +'], value=' ')
     # Remove emojis
@@ -54,14 +56,15 @@ def split_data(df, percentage_second):
     return df_1, df_2
 
 
-def prepare_train_datasets(train_dataset_path, num_context_tweets=2, additional_entries=True):
+def prepare_train_datasets(train_dataset_path, num_context_tweets=2, additional_entries=False):
     """
         Split a dataframe into two equal dataframes. Augment the data if necessary.
     """
 
     df = pd.read_json(train_dataset_path, lines=True)
 
-    # Augment dataset with additional entries using only context without the corresponding sarcastic response
+    # Augment dataset with additional entries using only context without the corresponding sarcastic response (see ets winner paper for details)
+    # Note that this is, by default, not used, because it's not clear what the effect of it would be when using delimiters
     if additional_entries:
         sarcastic_df = df[df['label'] == 'SARCASM'].copy()
         sarcastic_df = sarcastic_df.assign(response='')
@@ -69,9 +72,18 @@ def prepare_train_datasets(train_dataset_path, num_context_tweets=2, additional_
         df = df.append(sarcastic_df)
 
     # Add the context-tweets to the training data
-    df['source_text'] = df['context'].apply(lambda x: ' '.join(map(str, x[-num_context_tweets:])))
-    df['source_text'] = df['source_text'] + df['response']
+    # Note that we take multiple context tweets from the message chain that led up to the response, in the assumption that more context is better
+    df = concat_last_context_rows(df, num_context_tweets)
+    
+    df = preprocessing(df, 'context') # preprocessing(df['context'].apply(lambda x: ' '.join(map(str, x[-num_context_tweets:]))), "context")
+    df = preprocessing(df, "response")
+    
+    df['source_text'] = "<sc> " + df['context'] + " <ec> <sr> " + df['response'] + " <er>"
     df['target_text'] = df['label']
+
+    #for i, row in df.iterrows():
+    #    print(row['source_text'] + "\n\n")
+
 
     # Split the dataset into two  equal sets
     train_df_1, train_df_2 = split_data(df, 0.5)
@@ -86,8 +98,14 @@ def prepare_test_dataset(path, num_context_tweets=2):
     df = pd.read_json(path, lines=True)
 
     # Add the context-tweets to the training data
-    df['source_text'] = df['context'].apply(lambda x: ' '.join(map(str, x[-num_context_tweets:])))
-    df['source_text'] = df['source_text'] + df['response']
+    # Note that we take multiple context tweets from the message chain that led up to the response, in the assumption that more context is better
+    df = concat_last_context_rows(df, num_context_tweets)
+    
+    df = preprocessing(df, 'context') # preprocessing(df['context'].apply(lambda x: ' '.join(map(str, x[-num_context_tweets:]))), "context")
+    df = preprocessing(df, "response")
+    
+    # Add delimiters to show the model where context and response are
+    df['source_text'] = "<sc> " + df['context'] + " <ec> <sr> " + df['response'] + " <er>"
     df['target_text'] = df['label']
 
     test_df = df.drop(labels=['context', 'response', 'id', 'label'], axis=1)

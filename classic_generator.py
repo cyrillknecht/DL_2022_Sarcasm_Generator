@@ -9,11 +9,11 @@ import pandas as pd
 
 # Training Parameters
 MODEL = '124M'
-STEPS = 100
+STEPS = 480
 GENERATE = 100
 DATASET_PATH = 'dataset/ets_twitter_train_data_generator.jsonl'
-TRAIN_SET_PATH = 'dataset/ets_twitter_train_data_generator.txt'
-RESULT_PATH = 'generated/classic_results.txt'
+TRAIN_SET_PATH = 'dataset/ets_twitter_train_data_generator.csv'
+RESULT_PATH = 'generated/classic_results.csv'
 
 # Get all sarcastic tweets from dataset for fine-tuning
 train_data = pd.read_json(DATASET_PATH, lines=True)
@@ -28,12 +28,18 @@ sarcastic_tweets = preprocessing(sarcastic_tweets, 'response')
 
 # Save as txt file
 with open(TRAIN_SET_PATH, 'w') as f:
+
+    # Make header because the first line is skipped when using csv
+    f.write("data\n")
+
     for i, row in sarcastic_tweets.iterrows():
-        f.write(row['context'] + row['response'] + "\n")
+        f.write("<sc> " + row['context'] + " <ec> <sr> " + row['response'] + " <er>" + "\n")
 
 # Get base model
 gpt2.download_gpt2(model_name="124M")
 sess = gpt2.start_tf_sess()
+
+print(f"Start training for {STEPS} steps. ")
 
 # Finetune the model
 gpt2.finetune(sess,
@@ -42,11 +48,13 @@ gpt2.finetune(sess,
               steps=STEPS,
               restore_from='fresh',
               run_name='run_classic',
-              print_every=10,
-              sample_every=200,
+              print_every=5,
+              sample_every=100,
               save_every=STEPS,
               reuse=False
               )
+
+print(f"Finished training. ")
 
 # Generate tweets
 # We use non-sarcastic samples as prompts
@@ -58,7 +66,15 @@ prompts = preprocessing(prompts, 'context')
 
 # Generate tweets and write to output file
 with open(RESULT_PATH, 'w') as f:
+
+    print(f"Generating final outputs...")
+
+    # Make header because the first line is skipped when using csv
+    f.write("data\n")
+
     for i, row in prompts.head(GENERATE).iterrows():
         generated_tweet = gpt2.generate(sess, run_name='run_classic', return_as_list=True, length=128, prefix=row['context'])[0]
         generated_tweet = generated_tweet.replace("\r", " ").replace("\n", " ")
         f.write(generated_tweet + "\n")
+        if i % 10 == 0:
+            print(f"Generated {i} outputs ({i/GENERATE*100:2f}% done)...")

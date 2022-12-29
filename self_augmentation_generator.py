@@ -1,11 +1,16 @@
 """
-    Finetune standard gpt-2 model with a mix of
+    Finetune standard gpt-2 model with a mix of regular samples and self-generated samples
     This model will be compared to classical finetuned model by the judge.
 """
 from helper import preprocessing, concat_last_context_rows
 from classifier import Classifier
 import gpt_2_simple as gpt2
 import pandas as pd
+
+import tensorflow as tf
+import os
+tf.get_logger().setLevel('ERROR')
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 # Training options
 MODEL = '124M'
@@ -14,17 +19,18 @@ EPOCHS = 10
 GENERATE = 100
 
 # Settings for dataset / generated samples mix
+# (NOTE: Per "epoch", a total of DATSET_SAMPLES_PER_EPOCH + GENERATED_SAMPLES_PER_EPOCH will be generated)
 DATASET_SAMPLES_INITIAL = 100
 DATASET_SAMPLES_PER_EPOCH = 20
 GENERATED_SAMPLES_PER_EPOCH = 20
-MAX_GENERATOR_TRIES = 100
-GENERATION_BATCH_SIZE=8
+MAX_GENERATOR_TRIES = 5*GENERATED_SAMPLES_PER_EPOCH
+GENERATION_BATCH_SIZE = 4
 
 # Path variables
 DATASET_PATH = 'dataset/ets_twitter_train_data_generator.jsonl'
-TRAIN_SET_PATH = 'dataset/ets_twitter_train_data_generator.txt'
-RESULT_PATH = 'generated/self_augmented_results.txt'
-CLASSIFIER_PATH = 'models/self_augmented'
+TRAIN_SET_PATH = 'dataset/ets_twitter_train_data_generator.csv'
+RESULT_PATH = 'generated/self_augmented_results.csv'
+CLASSIFIER_PATH = 'models/classifier'
 FILES = ['generated/classic_finetuned_results.txt']
 
 # Get all sarcastic tweets from dataset
@@ -38,16 +44,20 @@ all_sarcastic_tweets = concat_last_context_rows(all_sarcastic_tweets, 2)
 all_sarcastic_tweets = preprocessing(all_sarcastic_tweets, 'context')
 all_sarcastic_tweets = preprocessing(all_sarcastic_tweets, 'response')
 
-# Save as txt file
+# Save as csv file
 with open(TRAIN_SET_PATH, 'w') as f:
+
+    # Make header because the first line is skipped when using csv
+    f.write("data\n")
+
     for i, row in all_sarcastic_tweets.head(DATASET_SAMPLES_INITIAL).iterrows():
-        f.write(row['context'] + row['response'] + "\n")
+        f.write("<sc> " + row['context'] + " <ec> <sr> " + row['response'] + " <er>" + "\n")
 
 current_number_of_samples = DATASET_SAMPLES_INITIAL
 
 # Init classifier for judging generated tweets
-judge = Classifier()
-judge.load_classifier(CLASSIFIER_PATH)
+classifier = Classifier()
+classifier.load_classifier(CLASSIFIER_PATH)
 
 # Get prompts for training
 prompts = train_data[train_data["label"] == "NOT_SARCASM"][['context']]
@@ -80,6 +90,7 @@ for epoch in range(EPOCHS):
                   restore_from=restore_from,
                   run_name='run_self_augmentation',
                   print_every=5,
+                  batch_size=1,
                   sample_every=100,
                   save_every=current_number_of_samples,
                   reuse=False,
@@ -93,11 +104,15 @@ for epoch in range(EPOCHS):
 
     # Create new dataset for next epoch
     with open(TRAIN_SET_PATH, 'w') as f:
+
+        # Make header because the first line is skipped when using csv
+        f.write("data\n")
+
         # Take samples from dataset
-        startIndex = (DATASET_SAMPLES_INITIAL + epoch * DATASET_SAMPLES_PER_EPOCH) % 5000 #mod 5000 because that's how many samples the training set contains; we don't want to run out of range
+        startIndex = (DATASET_SAMPLES_INITIAL + epoch * DATASET_SAMPLES_PER_EPOCH) % 5000 # mod 5000 because that's how many samples the training set contains; we don't want to run out of range
         for sample in range(DATASET_SAMPLES_PER_EPOCH):
             row = all_sarcastic_tweets.iloc[startIndex + sample]
-            f.write(row['context'] + row['response'] + "\n")
+            f.write("<sc> " + row['context'] + " <ec> <sr> " + row['response'] + " <er>" + "\n")
             current_number_of_samples += 1
             
         nGenerated = 0
@@ -108,34 +123,53 @@ for epoch in range(EPOCHS):
         # Generate new training samples
         while nGenerated < GENERATED_SAMPLES_PER_EPOCH and generatorTries < MAX_GENERATOR_TRIES:
         
-            generated_tweets = gpt2.generate(sess, run_name='run_self_augmentation', return_as_list=True, length=128, prefix=prompts.iloc[promptIndex]['context'], nsamples=GENERATION_BATCH_SIZE, batch_size=GENERATION_BATCH_SIZE)
-            
-            for generated_tweet in generated_tweets:
-            
-                generated_tweet = generated_tweet.replace("\r", " ").replace("\n", " ")
+            # Kinda stupid: we can only supply a single prefix even when generating multiple samples...
+            prefix = "<sc> "+ prompts.iloc[promptIndex]['context'] + " <ec> <sr> "
+            generated_tweets = gpt2.generate(sess, run_name='run_self_augmentation', return_as_list=True, length=128, prefix=prefix, nsamples=GENERATION_BATCH_SIZE, batch_size=GENERATION_BATCH_SIZE, truncate="<|endoftext|>")
 
-                if judge.classify_tweet(generated_tweet):
+            for generated_tweet in generated_tweets:
+
+                #print(f"Context: {prefix}")
+                #print(f"Generated:\n{generated_tweet}\n\n")
+            
+                generated_tweet = generated_tweet.replace("\r", " ").replace("\n", " ").replace(",", "").replace(";", "").replace("  ", " ")
+
+                #generated_tweet = 
+
+                if classifier.classify_tweet(generated_tweet):
                     # Only take it if answers are classified as sarcasm
-                    
                     f.write(generated_tweet+"\n")
                     nGenerated += 1
                     current_number_of_samples += 1
-
-                promptIndex += 1
-
-                if promptIndex >= len(prompts):
-                    promptIndex = 0
                 
                 generatorTries += 1
                 
                 if nGenerated >= GENERATED_SAMPLES_PER_EPOCH: # Prevent generating more than GENERATED_SAMPLES_PER_EPOCH samples
                     break
                     
+            # Since GENERATION_BATCH_SIZE samples are generated with the same prefix, 
+            # we only increase the promptIndex _after_ going over all of the generated tweets
+            promptIndex += 1
+
+            if promptIndex >= len(prompts):
+                promptIndex = 0
+
         print(f"Finished sample generation. {nGenerated} generated samples were classified as 'sarcastic' (out of {generatorTries} generated samples)")
+
+print(f"Finished training. ")
 
 # Generate tweets and write to output file
 with open(RESULT_PATH, 'w') as f:
+
+    print(f"Generating final outputs...")
+
+    # Make header because the first line is skipped when using csv
+    f.write("data\n")
+
     for i, row in prompts.head(GENERATE).iterrows():
-        generated_tweet = gpt2.generate(sess, run_name='run_self_augmentation', return_as_list=True, length=128, prefix=row['context'])[0]
-        generated_tweet = generated_tweet.replace("\r", " ").replace("\n", " ")
+        prefix = "<sc> " + row['context'] + " <ec> <sr> "
+        generated_tweet = gpt2.generate(sess, run_name='run_self_augmentation', return_as_list=True, length=128, prefix=prefix, truncate="<|endoftext|>")[0]
+        generated_tweet = generated_tweet.replace("\r", " ").replace("\n", " ").replace(",", "").replace(";", "").replace("  ", " ")
         f.write(generated_tweet + "\n")
+        if i % 10 == 0:
+            print(f"Generated {i} outputs ({i/GENERATE*100:2f}% done)...")
