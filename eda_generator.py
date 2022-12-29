@@ -108,9 +108,9 @@ for epoch in range(EPOCHS):
         # Augmented samples
         for sample in range(AUGMENTED_SAMPLES_PER_EPOCH): 
             row = all_sarcastic_tweets.iloc[startIndex + DATASET_SAMPLES_PER_EPOCH + sample]
-            print(f"### Sample prior to augmentation: {row['response']}\n")
+            #print(f"### Sample prior to augmentation: {row['response']}\n")
             row['response'] = eda(row['response'], num_aug=1)[0]
-            print(f"### Sample after augmentation: {row['response']}\n")
+            #print(f"### Sample after augmentation: {row['response']}\n")
             f.write("<sc> " + row['context'] + " <ec> <sr> " + row['response'] + " <er>" + "\n")
 
             current_number_of_samples += 1
