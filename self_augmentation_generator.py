@@ -173,3 +173,5 @@ with open(RESULT_PATH, 'w') as f:
         f.write(generated_tweet + "\n")
         if i % 10 == 0:
             print(f"Generated {i} outputs ({i/GENERATE*100:2f}% done)...")
+
+print(f"Finished generating outputs. ")

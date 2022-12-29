@@ -129,8 +129,10 @@ with open(RESULT_PATH, 'w') as f:
 
     for i, row in prompts.head(GENERATE).iterrows():
         prefix = "<sc> " + row['context'] + " <ec> <sr> "
-        generated_tweet = gpt2.generate(sess, run_name='run_self_augmentation', return_as_list=True, length=128, prefix=prefix)[0]
+        generated_tweet = gpt2.generate(sess, run_name='run_self_augmentation', return_as_list=True, length=128, prefix=prefix, truncate="<|endoftext|>")[0]
         generated_tweet = generated_tweet.replace("\r", " ").replace("\n", " ")
         f.write(generated_tweet + "\n")
         if i % 10 == 0:
             print(f"Generated {i} outputs ({i/GENERATE*100:2f}% done)...")
+
+print(f"Finished generating outputs.")
