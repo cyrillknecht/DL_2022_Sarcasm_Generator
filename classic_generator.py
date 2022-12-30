@@ -75,11 +75,11 @@ with open(RESULT_PATH, 'w') as f:
     counter = 0
     for i, row in prompts.head(GENERATE).iterrows():
         prefix = "<sc> " + row['context'] + " <ec> <sr> "
-        generated_tweet = gpt2.generate(sess, run_name='run_classic', return_as_list=True, length=128, prefix=prefix, truncate="<|endoftext|>")[0]
+        generated_tweet = gpt2.generate(sess, run_name='run_classic', return_as_list=True, length=128, prefix=prefix, nsamples=1, batch_size=1, truncate="<|endoftext|>")[0]
         generated_tweet = generated_tweet.replace("\r", " ").replace("\n", " ").replace(",", "").replace(";", "").strip()
         print(generated_tweet+"\n\n")
         f.write(generated_tweet + "\n")
-        if counter % 10 == 0:
+        if counter % 5 == 0:
             print(f"Generated {counter} outputs ({counter/GENERATE*100:2f}% done)...")
         counter += 1
 

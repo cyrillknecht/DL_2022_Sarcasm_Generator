@@ -37,6 +37,8 @@ all_sarcastic_tweets = concat_last_context_rows(all_sarcastic_tweets, 2)
 all_sarcastic_tweets = preprocessing(all_sarcastic_tweets, 'context')
 all_sarcastic_tweets = preprocessing(all_sarcastic_tweets, 'response')
 
+NUM_SARCASTIC_TWEETS = all_sarcastic_tweets.shape[0]
+
 # Save as csv file
 with open(TRAIN_SET_PATH, 'w') as f:
 
@@ -99,7 +101,7 @@ for epoch in range(EPOCHS):
         
         # Non-augmented samples
         for sample in range(DATASET_SAMPLES_PER_EPOCH): 
-            row = all_sarcastic_tweets.iloc[startIndex + sample]
+            row = all_sarcastic_tweets.iloc[(startIndex + sample) % NUM_SARCASTIC_TWEETS]
             f.write("<sc> " + row['context'] + " <ec> <sr> " + row['response'] + " <er>" + "\n")
             current_number_of_samples += 1
         
@@ -107,7 +109,7 @@ for epoch in range(EPOCHS):
         
         # Augmented samples
         for sample in range(AUGMENTED_SAMPLES_PER_EPOCH): 
-            row = all_sarcastic_tweets.iloc[startIndex + DATASET_SAMPLES_PER_EPOCH + sample]
+            row = all_sarcastic_tweets.iloc[(startIndex + DATASET_SAMPLES_PER_EPOCH + sample) % NUM_SARCASTIC_TWEETS]
             #print(f"### Sample prior to augmentation: {row['response']}\n")
             row['response'] = eda(row['response'], num_aug=1)[0]
             #print(f"### Sample after augmentation: {row['response']}\n")
@@ -130,10 +132,10 @@ with open(RESULT_PATH, 'w') as f:
     counter = 0
     for i, row in prompts.head(GENERATE).iterrows(): # Note: i is the _original_ row number, which means i is not just a "counter variable"
         prefix = "<sc> " + row['context'] + " <ec> <sr> "
-        generated_tweet = gpt2.generate(sess, run_name='run_self_augmentation', return_as_list=True, length=128, prefix=prefix, truncate="<|endoftext|>")[0]
+        generated_tweet = gpt2.generate(sess, run_name='run_eda', return_as_list=True, length=128, prefix=prefix, nsamples=1, batch_size=1, truncate="<|endoftext|>")[0]
         generated_tweet = generated_tweet.replace("\r", " ").replace("\n", " ").replace(",", "").replace(";", "").strip()
         f.write(generated_tweet + "\n")
-        if i % 10 == 0:
+        if i % 5 == 0:
             print(f"Generated {counter} outputs ({counter/GENERATE*100:2f}% done)...")
         counter += 1
 

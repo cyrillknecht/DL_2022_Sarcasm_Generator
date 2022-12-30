@@ -27,7 +27,7 @@ MAX_GENERATOR_TRIES = 5*GENERATED_SAMPLES_PER_EPOCH
 GENERATION_BATCH_SIZE = 4
 
 # Path variables
-DATASET_PATH = 'dataset/ets_twitter_train_data_generator.jsonl'
+DATASET_PATH = 'dataset/ets_twitter_train_data_generator_subset_100.jsonl'
 TRAIN_SET_PATH = 'dataset/ets_twitter_train_data_generator.csv'
 RESULT_PATH = 'generated/self_augmented_results.csv'
 CLASSIFIER_PATH = 'models/classifier'
@@ -37,12 +37,15 @@ FILES = ['generated/classic_finetuned_results.txt']
 train_data = pd.read_json(DATASET_PATH, lines=True)
 all_sarcastic_tweets = train_data[train_data["label"] == "SARCASM"][['response', 'context']]
 
+
 # Concatenate the last two context entries
 all_sarcastic_tweets = concat_last_context_rows(all_sarcastic_tweets, 2)
 
 # Preprocess data
 all_sarcastic_tweets = preprocessing(all_sarcastic_tweets, 'context')
 all_sarcastic_tweets = preprocessing(all_sarcastic_tweets, 'response')
+
+NUM_SARCASTIC_TWEETS = all_sarcastic_tweets.shape[0]
 
 # Save as csv file
 with open(TRAIN_SET_PATH, 'w') as f:
@@ -64,6 +67,9 @@ prompts = train_data[train_data["label"] == "NOT_SARCASM"][['context']]
 # Concatenate the last two context entries
 prompts = concat_last_context_rows(prompts, 2)
 prompts = preprocessing(prompts, 'context')
+
+NUM_NON_SARCASTIC_TWEETS = prompts.shape[0]
+
 promptIndex = 0
 
 # Get base model
@@ -109,9 +115,9 @@ for epoch in range(EPOCHS):
         f.write("data\n")
 
         # Take samples from dataset
-        startIndex = (DATASET_SAMPLES_INITIAL + epoch * DATASET_SAMPLES_PER_EPOCH) % 5000 # mod 5000 because that's how many samples the training set contains; we don't want to run out of range
+        startIndex = DATASET_SAMPLES_INITIAL + epoch * DATASET_SAMPLES_PER_EPOCH
         for sample in range(DATASET_SAMPLES_PER_EPOCH):
-            row = all_sarcastic_tweets.iloc[startIndex + sample]
+            row = all_sarcastic_tweets.iloc[(startIndex + sample) % NUM_SARCASTIC_TWEETS]
             f.write("<sc> " + row['context'] + " <ec> <sr> " + row['response'] + " <er>" + "\n")
             current_number_of_samples += 1
             
@@ -124,7 +130,7 @@ for epoch in range(EPOCHS):
         while nGenerated < GENERATED_SAMPLES_PER_EPOCH and generatorTries < MAX_GENERATOR_TRIES:
         
             # Kinda stupid: we can only supply a single prefix even when generating multiple samples...
-            prefix = "<sc> "+ prompts.iloc[promptIndex]['context'] + " <ec> <sr> "
+            prefix = "<sc> "+ prompts.iloc[promptIndex % NUM_NON_SARCASTIC_TWEETS]['context'] + " <ec> <sr> "
             generated_tweets = gpt2.generate(sess, run_name='run_self_augmentation', return_as_list=True, length=128, prefix=prefix, nsamples=GENERATION_BATCH_SIZE, batch_size=GENERATION_BATCH_SIZE, truncate="<|endoftext|>")
 
             for generated_tweet in generated_tweets:
@@ -168,10 +174,10 @@ with open(RESULT_PATH, 'w') as f:
     counter = 0
     for i, row in prompts.head(GENERATE).iterrows(): # Note: i is the _original_ row number, which means i is not just a "counter variable"
         prefix = "<sc> " + row['context'] + " <ec> <sr> "
-        generated_tweet = gpt2.generate(sess, run_name='run_self_augmentation', return_as_list=True, length=128, prefix=prefix, truncate="<|endoftext|>")[0]
+        generated_tweet = gpt2.generate(sess, run_name='run_self_augmentation', return_as_list=True, length=128, prefix=prefix, nsamples=1, batch_size=1, truncate="<|endoftext|>")[0]
         generated_tweet = generated_tweet.replace("\r", " ").replace("\n", " ").replace(",", "").replace(";", "").strip()
         f.write(generated_tweet + "\n")
-        if counter % 10 == 0:
+        if counter % 5 == 0:
             print(f"Generated {counter} outputs ({counter/GENERATE*100:2f}% done)...")
         counter += 1
 
