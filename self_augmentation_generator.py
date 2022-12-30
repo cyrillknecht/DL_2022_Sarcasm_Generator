@@ -27,14 +27,14 @@ MAX_GENERATOR_TRIES = 5*GENERATED_SAMPLES_PER_EPOCH
 GENERATION_BATCH_SIZE = 4
 
 # Path variables
-DATASET_PATH = 'dataset/ets_twitter_train_data_generator_subset_100.jsonl'
-TRAIN_SET_PATH = 'dataset/ets_twitter_train_data_generator.csv'
+SARCASM_DATASET_PATH = 'dataset/ets_twitter_train_data_generator_only_sarcasm_subset_100.jsonl'
+NON_SARCASM_DATASET_PATH = 'dataset/ets_twitter_train_data_generator_only_non_sarcasm.jsonl'
+TRAIN_SET_PATH = 'dataset/temporary_train_data_generator.csv'
 RESULT_PATH = 'generated/self_augmented_results.csv'
 CLASSIFIER_PATH = 'models/classifier'
-FILES = ['generated/classic_finetuned_results.txt']
 
 # Get all sarcastic tweets from dataset
-train_data = pd.read_json(DATASET_PATH, lines=True)
+train_data = pd.read_json(SARCASM_DATASET_PATH, lines=True)
 all_sarcastic_tweets = train_data[train_data["label"] == "SARCASM"][['response', 'context']]
 
 
@@ -63,7 +63,8 @@ classifier = Classifier()
 classifier.load_classifier(CLASSIFIER_PATH)
 
 # Get prompts for training
-prompts = train_data[train_data["label"] == "NOT_SARCASM"][['context']]
+prompts = pd.read_json(NON_SARCASM_DATASET_PATH, lines=True) #train_data[train_data["label"] == "NOT_SARCASM"][['context']]
+prompts = prompts[prompts["label"] == "NOT_SARCASM"][['context']]
 # Concatenate the last two context entries
 prompts = concat_last_context_rows(prompts, 2)
 prompts = preprocessing(prompts, 'context')

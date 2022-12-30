@@ -11,12 +11,14 @@ import pandas as pd
 MODEL = '124M'
 STEPS = 480
 GENERATE = 100
-DATASET_PATH = 'dataset/ets_twitter_train_data_generator.jsonl'
-TRAIN_SET_PATH = 'dataset/ets_twitter_train_data_generator.csv'
+
+SARCASM_DATASET_PATH = 'dataset/ets_twitter_train_data_generator_only_sarcasm_subset_100.jsonl'
+NON_SARCASM_DATASET_PATH = 'dataset/ets_twitter_train_data_generator_only_non_sarcasm.jsonl'
+TRAIN_SET_PATH = 'dataset/temporary_train_data_generator.csv'
 RESULT_PATH = 'generated/classic_results.csv'
 
 # Get all sarcastic tweets from dataset for fine-tuning
-train_data = pd.read_json(DATASET_PATH, lines=True)
+train_data = pd.read_json(SARCASM_DATASET_PATH, lines=True)
 sarcastic_tweets = train_data[train_data["label"] == "SARCASM"][['response', 'context']]
 
 # Concatenate the last two context entries
@@ -58,8 +60,8 @@ print(f"Finished training. ")
 
 # Generate tweets
 # We use non-sarcastic samples as prompts
-prompts = train_data[train_data["label"] == "NOT_SARCASM"][['context']]
-
+prompts = pd.read_json(NON_SARCASM_DATASET_PATH, lines=True) 
+prompts = prompts[prompts["label"] == "NOT_SARCASM"][['context']]
 # Concatenate the last two context entries
 prompts = concat_last_context_rows(prompts, 2)
 prompts = preprocessing(prompts, 'context')

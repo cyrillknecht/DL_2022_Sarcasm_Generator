@@ -6,7 +6,7 @@ import csv
 
 TRAINED_CLASSIFIER_PATH = 'models/judge'
 FOLDER = 'generated'
-FILES = ['self_augmented_results.csv']
+FILES = ['eda_augmented_results.csv']
 
 judge = Classifier()
 judge.load_classifier(TRAINED_CLASSIFIER_PATH)

@@ -4,9 +4,9 @@
 
 from numpy.random import default_rng
 
-NUM_NEW_ROWS = 100
-INFILE_PATH = "dataset/ets_twitter_train_data_generator.jsonl"
-OUTFILE_PATH = f"dataset/ets_twitter_train_data_generator_subset_{NUM_NEW_ROWS}.jsonl"
+NUM_NEW_ROWS = 500
+INFILE_PATH = "dataset/ets_twitter_train_data_generator_only_sarcasm.jsonl"
+OUTFILE_PATH = f"dataset/ets_twitter_train_data_generator_only_sarcasm_subset_{NUM_NEW_ROWS}.jsonl"
 
 row_count = 0
 with open(INFILE_PATH, 'r') as f:
