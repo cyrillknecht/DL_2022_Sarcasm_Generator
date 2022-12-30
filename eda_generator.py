@@ -17,11 +17,11 @@ GENERATE = 100
 # Settings for dataset / generated samples mix 
 # (NOTE: Per "epoch", a total of DATSET_SAMPLES_PER_EPOCH + AUGMENTED_SAMPLES_PER_EPOCH will be generated)
 DATASET_SAMPLES_INITIAL = 100
-DATASET_SAMPLES_PER_EPOCH = 20
-AUGMENTED_SAMPLES_PER_EPOCH = 20
+DATASET_SAMPLES_PER_EPOCH = 0
+AUGMENTED_SAMPLES_PER_EPOCH = 40
 
 # Path variables
-DATASET_PATH = 'dataset/ets_twitter_train_data_generator.jsonl'
+DATASET_PATH = 'dataset/ets_twitter_train_data_generator_subset_100.jsonl'
 TRAIN_SET_PATH = 'dataset/ets_twitter_train_data_generator.csv'
 RESULT_PATH = 'generated/self_augmented_results.txt'
 FILES = ['generated/classic_finetuned_results.txt']
@@ -132,7 +132,7 @@ with open(RESULT_PATH, 'w') as f:
     counter = 0
     for i, row in prompts.head(GENERATE).iterrows(): # Note: i is the _original_ row number, which means i is not just a "counter variable"
         prefix = "<sc> " + row['context'] + " <ec> <sr> "
-        generated_tweet = gpt2.generate(sess, run_name='run_eda', return_as_list=True, length=128, prefix=prefix, nsamples=1, batch_size=1, truncate="<|endoftext|>")[0]
+        generated_tweet = gpt2.generate(sess, run_name='run_eda_augmentation', return_as_list=True, length=128, prefix=prefix, nsamples=1, batch_size=1, truncate="<|endoftext|>")[0]
         generated_tweet = generated_tweet.replace("\r", " ").replace("\n", " ").replace(",", "").replace(";", "").strip()
         f.write(generated_tweet + "\n")
         if i % 5 == 0:
