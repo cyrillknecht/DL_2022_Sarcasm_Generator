@@ -136,7 +136,7 @@ with open(RESULT_PATH, 'w') as f:
         generated_tweet = generated_tweet.replace("\r", " ").replace("\n", " ").replace(",", "").replace(";", "").strip()
         f.write(generated_tweet + "\n")
         if i % 5 == 0:
-            print(f"Generated {counter} outputs ({counter/GENERATE*100:2f}% done)...")
+            print(f"Generated {counter} outputs ({counter/GENERATE*100:.2f}% done)...")
         counter += 1
 
 print(f"Finished generating outputs.")

@@ -80,7 +80,7 @@ with open(RESULT_PATH, 'w') as f:
         print(generated_tweet+"\n\n")
         f.write(generated_tweet + "\n")
         if counter % 5 == 0:
-            print(f"Generated {counter} outputs ({counter/GENERATE*100:2f}% done)...")
+            print(f"Generated {counter} outputs ({counter/GENERATE*100:.2f}% done)...")
         counter += 1
 
 print(f"Finished generating outputs. ")

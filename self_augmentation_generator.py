@@ -21,8 +21,8 @@ GENERATE = 100
 # Settings for dataset / generated samples mix
 # (NOTE: Per "epoch", a total of DATSET_SAMPLES_PER_EPOCH + GENERATED_SAMPLES_PER_EPOCH will be generated)
 DATASET_SAMPLES_INITIAL = 100
-DATASET_SAMPLES_PER_EPOCH = 20
-GENERATED_SAMPLES_PER_EPOCH = 20
+DATASET_SAMPLES_PER_EPOCH = 0
+GENERATED_SAMPLES_PER_EPOCH = 40
 MAX_GENERATOR_TRIES = 5*GENERATED_SAMPLES_PER_EPOCH
 GENERATION_BATCH_SIZE = 4
 
@@ -178,7 +178,7 @@ with open(RESULT_PATH, 'w') as f:
         generated_tweet = generated_tweet.replace("\r", " ").replace("\n", " ").replace(",", "").replace(";", "").strip()
         f.write(generated_tweet + "\n")
         if counter % 5 == 0:
-            print(f"Generated {counter} outputs ({counter/GENERATE*100:2f}% done)...")
+            print(f"Generated {counter} outputs ({counter/GENERATE*100:.2f}% done)...")
         counter += 1
 
 print(f"Finished generating outputs. ")
