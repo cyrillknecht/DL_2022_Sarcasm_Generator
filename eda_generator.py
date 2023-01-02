@@ -15,7 +15,7 @@ STEPS_PER_EPOCH = 100
 GENERATE = 100
 
 # Settings for dataset / generated samples mix 
-# (NOTE: Per "epoch", a total of DATSET_SAMPLES_PER_EPOCH + AUGMENTED_SAMPLES_PER_EPOCH will be generated)
+# (NOTE: Per "epoch", a total of DATASET_SAMPLES_PER_EPOCH + AUGMENTED_SAMPLES_PER_EPOCH will be generated)
 DATASET_SAMPLES_INITIAL = 100
 DATASET_SAMPLES_PER_EPOCH = 0
 AUGMENTED_SAMPLES_PER_EPOCH = 40
@@ -132,7 +132,7 @@ with open(RESULT_PATH, 'w') as f:
     counter = 0
     for i, row in prompts.head(GENERATE).iterrows(): # Note: i is the _original_ row number, which means i is not just a "counter variable"
         prefix = "<sc> " + row['context'] + " <ec> <sr> "
-        generated_tweet = gpt2.generate(sess, run_name='run_eda_augmentation', return_as_list=True, length=128, prefix=prefix, nsamples=1, batch_size=1, truncate="<|endoftext|>")[0]
+        generated_tweet = gpt2.generate(sess, run_name='run_eda_augmentation', seed=42, return_as_list=True, length=128, prefix=prefix, nsamples=1, batch_size=1, truncate="<|endoftext|>")[0]
         generated_tweet = generated_tweet.replace("\r", " ").replace("\n", " ").replace(",", "").replace(";", "").strip()
         f.write(generated_tweet + "\n")
         if counter % 5 == 0:

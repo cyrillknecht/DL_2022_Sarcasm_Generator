@@ -34,7 +34,7 @@ class Classifier:
     def __init__(self, batch_size=4):
         self.classifier = SimpleT5()
         self.trained_classifier_path = None
-        self.batch_size=batch_size
+        self.batch_size = batch_size
 
     def finetune(self,
                  train_df,
@@ -82,7 +82,7 @@ class Classifier:
             predictions.append(prediction)
 
             if index % 100 == 0:
-                print(f"Processed {index/test_df.shape[0]*100:.2f}% of all samples.")
+                print(f"Processed {index / test_df.shape[0] * 100:.2f}% of all samples.")
 
         result_df = test_df.copy()
         result_df['predicted'] = predictions
@@ -149,19 +149,21 @@ def evaluation(trained_classifier_path, test_dataset_path, use_gpu=True, batch_s
     print("Evaluating Classifier..")
     print(classifier.evaluate_classifier(test_dataset))
 
+
 # When running this file, the two classifiers will be retrained
 if __name__ == "__main__":
-    #train_classifiers("dataset/sarcasm_detection_shared_task_twitter_training.jsonl", batch_size=4)
+    # train_classifiers("dataset/sarcasm_detection_shared_task_twitter_training.jsonl", batch_size=4)
 
     # Comment out the line above and uncomment these two lines to run only the evaluation part
-    #evaluation("models/judge", "dataset/sarcasm_detection_shared_task_twitter_testing.jsonl")
-    #evaluation("models/self_augmented", "dataset/sarcasm_detection_shared_task_twitter_testing.jsonl")
-    #for i in range(5, 10):
+    # evaluation("models/judge", "dataset/sarcasm_detection_shared_task_twitter_testing.jsonl")
+    # evaluation("models/self_augmented", "dataset/sarcasm_detection_shared_task_twitter_testing.jsonl")
+    # for i in range(5, 10):
     #    print(f"####### Starting evaluation for judge model {i}... #######")
     #    evaluation("models/judge/simplet5-" + str(i), "dataset/sarcasm_detection_shared_task_twitter_testing.jsonl", batch_size=16)
     #    print(f"####### Finished evaluation for judge model {i} #######")
 
     for i in range(2, 10):
         print(f"####### Starting evaluation for classifier model {i}... #######")
-        evaluation("models/classifier/simplet5-" + str(i), "dataset/sarcasm_detection_shared_task_twitter_testing.jsonl", batch_size=8)
+        evaluation("models/classifier/simplet5-" + str(i),
+                   "dataset/sarcasm_detection_shared_task_twitter_testing.jsonl", batch_size=8)
         print(f"####### Finished evaluation for classifier model {i} #######")
