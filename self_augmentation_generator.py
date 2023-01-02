@@ -20,7 +20,7 @@ os.environ['TF_DETERMINISTIC_OPS'] = 'true'
 # Training options
 MODEL = '124M'
 EPOCHS = 10
-GENERATE = 100
+GENERATE = 500
 
 # Settings for dataset / generated samples mix
 # (NOTE: Per "epoch", a total of DATSET_SAMPLES_PER_EPOCH + GENERATED_SAMPLES_PER_EPOCH will be generated)
@@ -66,15 +66,13 @@ classifier = Classifier()
 classifier.load_classifier(CLASSIFIER_PATH)
 
 # Get prompts for training
-prompts = pd.read_json(NON_SARCASM_DATASET_PATH, lines=True) #train_data[train_data["label"] == "NOT_SARCASM"][['context']]
+prompts = pd.read_json(NON_SARCASM_DATASET_PATH, lines=True)
 prompts = prompts[prompts["label"] == "NOT_SARCASM"][['context']]
 # Concatenate the last two context entries
 prompts = concat_last_context_rows(prompts, 2)
 prompts = preprocessing(prompts, 'context')
 
 NUM_NON_SARCASTIC_TWEETS = prompts.shape[0]
-
-promptIndex = 0
 
 # Get base model
 gpt2.download_gpt2(model_name="124M")
@@ -92,7 +90,6 @@ for epoch in range(EPOCHS):
     tf.random.set_seed(42)
 
     print(f"Running {current_number_of_samples} iterations on {current_number_of_samples} samples...")
-
 
     gpt2.finetune(sess,
                   dataset=TRAIN_SET_PATH,
@@ -149,8 +146,15 @@ for epoch in range(EPOCHS):
 
                 generatorTries += 1
 
-                if nGenerated >= int(GENERATED_SAMPLES_PER_EPOCH): # Prevent generating more than GENERATED_SAMPLES_PER_EPOCH samples
+                # Prevent generating more than GENERATED_SAMPLES_PER_EPOCH samples
+                if nGenerated >= int(GENERATED_SAMPLES_PER_EPOCH):
                     break
+
+                # Reset session after 25 generated samples for speedup
+                if generatorTries % 25 == 0:
+                    sess = gpt2.reset_session(sess)
+                    tf.random.set_seed(42)
+                    gpt2.load_gpt2(sess, run_name='run_self_augmentation')
 
             # Since GENERATION_BATCH_SIZE samples are generated with the same prefix,
             # we only increase the promptIndex _after_ going over all of the generated tweets
@@ -172,7 +176,8 @@ with open(RESULT_PATH, 'w') as f:
     f.write("data\n")
 
     counter = 0
-    for i, row in prompts.head(GENERATE).iterrows(): # Note: i is the _original_ row number, which means i is not just a "counter variable"
+    # Note: i is the _original_ row number, which means i is not just a "counter variable"
+    for i, row in prompts.head(GENERATE).iterrows():
         prefix = "<sc> " + row['context'] + " <ec> <sr> "
         generated_tweet = gpt2.generate(sess, run_name='run_self_augmentation', return_as_list=True, length=128, prefix=prefix, nsamples=1, batch_size=1, truncate="<|endoftext|>", seed=42)[0]
         generated_tweet = generated_tweet.replace("\r", " ").replace("\n", " ").replace(",", "").replace(";", "").strip()
@@ -180,5 +185,11 @@ with open(RESULT_PATH, 'w') as f:
         if counter % 5 == 0:
             print(f"Generated {counter} outputs ({counter/GENERATE*100:.2f}% done)...")
         counter += 1
+
+        # Reset session after 25 generated samples for speedup
+        if counter % 25 == 0:
+            sess = gpt2.reset_session(sess)
+            tf.random.set_seed(42)
+            gpt2.load_gpt2(sess, run_name='run_self_augmentation')
 
 print(f"Finished generating outputs. ")
