@@ -7,6 +7,7 @@ from helper import preprocessing, concat_last_context_rows
 import gpt_2_simple as gpt2
 import pandas as pd
 import os
+import tensorflow as tf
 
 os.environ['TF_CUDNN_DETERMINISTIC'] = 'true'
 os.environ['TF_DETERMINISTIC_OPS'] = 'true'
