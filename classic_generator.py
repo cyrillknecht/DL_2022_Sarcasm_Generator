@@ -6,6 +6,10 @@
 from helper import preprocessing, concat_last_context_rows
 import gpt_2_simple as gpt2
 import pandas as pd
+import os
+
+os.environ['TF_CUDNN_DETERMINISTIC'] = 'true'
+os.environ['TF_DETERMINISTIC_OPS'] = 'true'
 
 # Training Parameters
 MODEL = '124M'
@@ -40,6 +44,7 @@ with open(TRAIN_SET_PATH, 'w') as f:
 # Get base model
 gpt2.download_gpt2(model_name="124M")
 sess = gpt2.start_tf_sess()
+tf.random.set_seed(42)
 
 print(f"Start training for {STEPS} steps. ")
 

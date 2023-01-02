@@ -12,6 +12,8 @@ import os
 
 tf.get_logger().setLevel('ERROR')
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ['TF_CUDNN_DETERMINISTIC'] = 'true'
+os.environ['TF_DETERMINISTIC_OPS'] = 'true'
 
 # Training options
 MODEL = '124M'
@@ -86,6 +88,7 @@ for epoch in range(EPOCHS):
     # Reset session
     gpt2.reset_session(sess)
     sess = gpt2.start_tf_sess()
+    tf.random.set_seed(42)
 
     print(f"Running {current_number_of_samples} iterations on {current_number_of_samples} samples...")
 

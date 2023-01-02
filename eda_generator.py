@@ -7,6 +7,10 @@ from classifier import Classifier
 import gpt_2_simple as gpt2
 import pandas as pd
 from eda import eda
+import os
+
+os.environ['TF_CUDNN_DETERMINISTIC'] = 'true'
+os.environ['TF_DETERMINISTIC_OPS'] = 'true'
 
 # Training options
 MODEL = '124M'
@@ -69,6 +73,7 @@ for epoch in range(EPOCHS):
     # Reset session
     gpt2.reset_session(sess)
     sess = gpt2.start_tf_sess()
+    tf.random.set_seed(42)
 
     nGenerated = 0
     gpt2.finetune(sess,
