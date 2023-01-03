@@ -3,24 +3,29 @@
 """
 from classifier import Classifier
 import csv
+import sys
 
 TRAINED_CLASSIFIER_PATH = "models/judge"
 FOLDER = "generated"
 
+# NOTE: Uncomment multiple files to be evaluated or pass name as argument!
 FILES = [
     "500_classic_results.csv",  # 0%
-    "500_self_augmented_results_30_10.csv",  # 25%
-    "500_self_augmented_results_20_20.csv",  # 50%
-    "500_self_augmented_results_16_24.csv",  # 60%
-    "500_self_augmented_results_14_26.csv",  # 65%
-    "500_self_augmented_results_12_28.csv",  # 70%
+    # "500_self_augmented_results_30_10.csv",  # 25%
+    # "500_self_augmented_results_20_20.csv",  # 50%
+    # "500_self_augmented_results_16_24.csv",  # 60%
+    # "500_self_augmented_results_14_26.csv",  # 65%
+    # "500_self_augmented_results_12_28.csv",  # 70%
     "500_self_augmented_results_10_30.csv",  # 75%
-    "500_self_augmented_results_0_40.csv",  # 100%
-    "500_eda_augmented_results_30_10.csv",  # eda: 25%
-    "500_eda_augmented_results_20_20.csv",  # eda: 50%
+    # "500_self_augmented_results_0_40.csv",  # 100%
+    # "500_eda_augmented_results_30_10.csv",  # eda: 25%
+    # "500_eda_augmented_results_20_20.csv",  # eda: 50%
     "500_eda_augmented_results_10_30.csv",  # eda: 75%
-    "500_eda_augmented_results_0_40.csv",  # eda: 100%
-]  # Add more files to be evaluated
+    # "500_eda_augmented_results_0_40.csv",  # eda: 100%
+]
+
+if len(FILES) == 0:
+    FILES = [sys.argv[1]]
 
 judge = Classifier()
 judge.load_classifier(TRAINED_CLASSIFIER_PATH)
