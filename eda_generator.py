@@ -3,7 +3,6 @@
     This model will be compared to classical finetuned model by the judge.
 """
 import sys
-
 from helper import preprocessing, concat_last_context_rows
 from classifier import Classifier
 import gpt_2_simple as gpt2
@@ -19,7 +18,7 @@ os.environ["TF_DETERMINISTIC_OPS"] = "true"
 MODEL = "124M"
 EPOCHS = 10
 STEPS_PER_EPOCH = 100
-GENERATE = 100
+GENERATE = 500
 
 # Settings for dataset / generated samples mix
 # (NOTE: Per "epoch", a total of DATASET_SAMPLES_PER_EPOCH + AUGMENTED_SAMPLES_PER_EPOCH will be generated)
@@ -194,5 +193,10 @@ with open(RESULT_PATH, "w") as f:
         if counter % 5 == 0:
             print(f"Generated {counter} outputs ({counter/GENERATE*100:.2f}% done)...")
         counter += 1
+        if counter % 25 == 0:
+            sess = gpt2.reset_session(sess)
+            tf.random.set_seed(42)
+            gpt2.load_gpt2(sess, run_name="run_eda_augmentation")
+
 
 print(f"Finished generating outputs.")
