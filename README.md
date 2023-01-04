@@ -3,7 +3,7 @@
 Cyrill Knecht, Joel Neuner-Jehle, Justin Studer, David Zehnder
 
 #### Project Description
-This is the repository of our proposed sarcasm generation model using self-augmentation. It uses a pretrained discriminator that can distinguish between sarcasm and non-sarcasm to indirectly provide the generator with feedback on the quality of its outputs during training. Outputs classified as sarcasm with high confidence will be fed back to the generator for further training. The performance of our proposed model is measured for different fractions of mixing self-augmented data with real data and compared to the baseline performance of classic model fine-tuning with and without state-of-the-art data augmentation.
+This is the repository of our proposed sarcasm generation model using self-augmentation. It uses a pretrained discriminator that can distinguish between sarcasm and non-sarcasm to indirectly provide the generator with feedback on the quality of its outputs during training. Outputs classified as sarcasm will be fed back to the generator for further training. The performance of our proposed model is measured for different fractions of mixing self-augmented data with real data and compared to the baseline performance of classic model fine-tuning with and without state-of-the-art data augmentation.
 
 The following figures show an abstract representation of the proposed self-augmentation model and the evaluation procedure:
 
