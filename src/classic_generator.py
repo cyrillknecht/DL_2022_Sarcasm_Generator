@@ -6,7 +6,6 @@
 from helper import preprocessing, concat_last_context_rows
 import gpt_2_simple as gpt2
 import pandas as pd
-import sys
 import os
 import tensorflow as tf
 

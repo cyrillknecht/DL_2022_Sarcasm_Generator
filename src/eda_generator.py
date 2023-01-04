@@ -4,7 +4,6 @@
 """
 import sys
 from helper import preprocessing, concat_last_context_rows
-from classifier import Classifier
 import gpt_2_simple as gpt2
 import pandas as pd
 from eda import eda

@@ -122,7 +122,7 @@ def train_classifiers(train_dataset_path, use_gpu=True, batch_size=4):
                          max_epochs=10,
                          early_stopping_patience_epochs=0,
                          save_only_last_epoch=False,
-                         output_dir="models/judge",
+                         output_dir="../models/judge",
                          use_gpu=use_gpu)
 
     print("Fine-tuning Classifier..")
@@ -131,7 +131,7 @@ def train_classifiers(train_dataset_path, use_gpu=True, batch_size=4):
                               max_epochs=10,
                               early_stopping_patience_epochs=0,
                               save_only_last_epoch=False,
-                              output_dir="models/classifier",
+                              output_dir="../models/classifier",
                               use_gpu=use_gpu)
 
 

@@ -75,15 +75,11 @@ def prepare_train_datasets(train_dataset_path, num_context_tweets=2, additional_
     # Note that we take multiple context tweets from the message chain that led up to the response, in the assumption that more context is better
     df = concat_last_context_rows(df, num_context_tweets)
     
-    df = preprocessing(df, 'context') # preprocessing(df['context'].apply(lambda x: ' '.join(map(str, x[-num_context_tweets:]))), "context")
+    df = preprocessing(df, 'context')
     df = preprocessing(df, "response")
     
     df['source_text'] = "<sc> " + df['context'] + " <ec> <sr> " + df['response'] + " <er>"
     df['target_text'] = df['label']
-
-    #for i, row in df.iterrows():
-    #    print(row['source_text'] + "\n\n")
-
 
     # Split the dataset into two  equal sets
     train_df_1, train_df_2 = split_data(df, 0.5)
@@ -101,7 +97,7 @@ def prepare_test_dataset(path, num_context_tweets=2):
     # Note that we take multiple context tweets from the message chain that led up to the response, in the assumption that more context is better
     df = concat_last_context_rows(df, num_context_tweets)
     
-    df = preprocessing(df, 'context') # preprocessing(df['context'].apply(lambda x: ' '.join(map(str, x[-num_context_tweets:]))), "context")
+    df = preprocessing(df, 'context')
     df = preprocessing(df, "response")
     
     # Add delimiters to show the model where context and response are

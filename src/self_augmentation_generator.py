@@ -10,9 +10,6 @@ import pandas as pd
 import tensorflow as tf
 import os
 
-tf.get_logger().setLevel("ERROR")
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-
 os.environ["TF_CUDNN_DETERMINISTIC"] = "true"
 os.environ["TF_DETERMINISTIC_OPS"] = "true"
 
