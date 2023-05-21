@@ -2,6 +2,8 @@
 ### Deep Learning Project AS 2022, ETH Zürich
 Cyrill Knecht, Joel Neuner-Jehle, Justin Studer, David Zehnder
 
+The paper can be found [here](https://github.com/njoel-ethz/DL_2022_Sarcasm_Generator/blob/main/Sarcasm_Paper.pdf).
+
 #### Project Description
 This is the repository of our proposed sarcasm generation model using self-augmentation. It uses a pretrained discriminator that can distinguish between sarcasm and non-sarcasm to indirectly provide the generator with feedback on the quality of its outputs during training. Outputs classified as sarcasm will be fed back to the generator for further training. The performance of our proposed model is measured for different fractions of mixing self-augmented data with real data and compared to the baseline performance of classic model fine-tuning with and without state-of-the-art data augmentation.
 
